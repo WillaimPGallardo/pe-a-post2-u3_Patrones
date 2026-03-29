@@ -6,24 +6,47 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class DecoratorTest {
 
-    private OrdenServicio build() {
+    private OrdenServicio buildCompleto() {
+        OrdenServicio base = new OrdenServicioBase();
+
         return new AuditoriaDecorator(
                 new ValidacionDecorator(
-                        new LoggingDecorator(
-                                new OrdenServicioBase()
-                        )
+                        new LoggingDecorator(base)
                 )
         );
     }
 
     @Test
     void testOrdenValida() {
-        assertTrue(build().procesarOrden("ORD-1", 10000).contains("PROCESADA"));
+        OrdenServicio svc = buildCompleto();
+
+        String result = svc.procesarOrden("ORD-001", 50000.0);
+
+        assertTrue(result.startsWith("PROCESADA:"));
     }
 
     @Test
-    void testErrorMonto() {
+    void testOrdenMontoInvalido() {
+        OrdenServicio svc = buildCompleto();
+
         assertThrows(IllegalArgumentException.class,
-                () -> build().procesarOrden("ORD-2", 0));
+                () -> svc.procesarOrden("ORD-002", 0.0));
+    }
+
+    @Test
+    void testOrdenIdVacio() {
+        OrdenServicio svc = buildCompleto();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> svc.procesarOrden("", 10000.0));
+    }
+
+    @Test
+    void testSoloLogging() {
+        OrdenServicio base = new OrdenServicioBase();
+        OrdenServicio conLog = new LoggingDecorator(base);
+
+        // No debería lanzar error aunque monto sea 0
+        assertDoesNotThrow(() -> conLog.procesarOrden("ORD-003", 0.0));
     }
 }
